@@ -1,7 +1,11 @@
+import base64
+import hmac
 import os
 import smtplib
+import time
 from email.mime.text import MIMEText
 from typing import Literal
+from urllib.parse import quote_plus
 
 import httpx
 
@@ -15,6 +19,7 @@ class NotificationKit:
 		self.pushplus_token = os.getenv('PUSHPLUS_TOKEN')
 		self.server_push_key = os.getenv('SERVERPUSHKEY')
 		self.dingding_webhook = os.getenv('DINGDING_WEBHOOK')
+		self.dingding_secret = os.getenv('DINGDING_SECRET')
 		self.feishu_webhook = os.getenv('FEISHU_WEBHOOK')
 		self.weixin_webhook = os.getenv('WEIXIN_WEBHOOK')
 
@@ -54,9 +59,21 @@ class NotificationKit:
 		if not self.dingding_webhook:
 			raise ValueError('DingTalk Webhook not configured')
 
+		webhook_url = self.dingding_webhook
+
+		# 如果配置了密钥，则进行加签
+		if self.dingding_secret:
+			timestamp = str(round(time.time() * 1000))
+			secret_enc = self.dingding_secret.encode('utf-8')
+			string_to_sign = f'{timestamp}\n{self.dingding_secret}'
+			string_to_sign_enc = string_to_sign.encode('utf-8')
+			hmac_code = hmac.new(secret_enc, string_to_sign_enc, digestmod='sha256').digest()
+			sign = quote_plus(base64.b64encode(hmac_code))
+			webhook_url = f'{self.dingding_webhook}&timestamp={timestamp}&sign={sign}'
+
 		data = {'msgtype': 'text', 'text': {'content': f'{title}\n{content}'}}
 		with httpx.Client(timeout=30.0) as client:
-			client.post(self.dingding_webhook, json=data)
+			client.post(webhook_url, json=data)
 
 	def send_feishu(self, title: str, content: str):
 		if not self.feishu_webhook:
