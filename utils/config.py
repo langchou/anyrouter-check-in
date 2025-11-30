@@ -134,36 +134,60 @@ class AccountConfig:
 
 
 def load_accounts_config() -> list[AccountConfig] | None:
-	"""从环境变量加载账号配置"""
+	"""从配置文件或环境变量加载账号配置
+
+	优先级：
+	1. ACCOUNTS_FILE 环境变量指定的文件路径
+	2. 当前目录下的 accounts.json
+	3. ANYROUTER_ACCOUNTS 环境变量
+	"""
+	# 尝试从文件加载
+	accounts_file = os.getenv('ACCOUNTS_FILE', 'accounts.json')
+	if os.path.exists(accounts_file):
+		try:
+			with open(accounts_file, 'r', encoding='utf-8') as f:
+				accounts_data = json.load(f)
+			print(f'[INFO] Loaded accounts from file: {accounts_file}')
+			return _parse_accounts_data(accounts_data)
+		except Exception as e:
+			print(f'ERROR: Failed to load accounts from {accounts_file}: {e}')
+			return None
+
+	# 回退到环境变量
 	accounts_str = os.getenv('ANYROUTER_ACCOUNTS')
 	if not accounts_str:
-		print('ERROR: ANYROUTER_ACCOUNTS environment variable not found')
+		print('ERROR: No accounts configuration found (accounts.json or ANYROUTER_ACCOUNTS)')
 		return None
 
 	try:
 		accounts_data = json.loads(accounts_str)
-
-		if not isinstance(accounts_data, list):
-			print('ERROR: Account configuration must use array format [{}]')
-			return None
-
-		accounts = []
-		for i, account_dict in enumerate(accounts_data):
-			if not isinstance(account_dict, dict):
-				print(f'ERROR: Account {i + 1} configuration format is incorrect')
-				return None
-
-			if 'cookies' not in account_dict or 'api_user' not in account_dict:
-				print(f'ERROR: Account {i + 1} missing required fields (cookies, api_user)')
-				return None
-
-			if 'name' in account_dict and not account_dict['name']:
-				print(f'ERROR: Account {i + 1} name field cannot be empty')
-				return None
-
-			accounts.append(AccountConfig.from_dict(account_dict, i))
-
-		return accounts
+		print('[INFO] Loaded accounts from ANYROUTER_ACCOUNTS environment variable')
+		return _parse_accounts_data(accounts_data)
 	except Exception as e:
 		print(f'ERROR: Account configuration format is incorrect: {e}')
 		return None
+
+
+def _parse_accounts_data(accounts_data) -> list[AccountConfig] | None:
+	"""解析账号配置数据"""
+	if not isinstance(accounts_data, list):
+		print('ERROR: Account configuration must use array format [{}]')
+		return None
+
+	accounts = []
+	for i, account_dict in enumerate(accounts_data):
+		if not isinstance(account_dict, dict):
+			print(f'ERROR: Account {i + 1} configuration format is incorrect')
+			return None
+
+		if 'cookies' not in account_dict or 'api_user' not in account_dict:
+			print(f'ERROR: Account {i + 1} missing required fields (cookies, api_user)')
+			return None
+
+		if 'name' in account_dict and not account_dict['name']:
+			print(f'ERROR: Account {i + 1} name field cannot be empty')
+			return None
+
+		accounts.append(AccountConfig.from_dict(account_dict, i))
+
+	return accounts

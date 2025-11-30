@@ -1,0 +1,18 @@
+[
+  {
+    "name": "账号1",
+    "cookies": {
+      "session": "你的session值"
+    },
+    "api_user": "你的api_user值",
+    "provider": "anyrouter"
+  },
+  {
+    "name": "账号2",
+    "cookies": {
+      "session": "另一个session值"
+    },
+    "api_user": "另一个api_user值",
+    "provider": "anyrouter"
+  }
+]

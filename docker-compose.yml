@@ -1,0 +1,17 @@
+services:
+  anyrouter-checkin:
+    build: .
+    container_name: anyrouter-checkin
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # 账号配置文件
+      - ./accounts.json:/app/accounts.json:ro
+      # 持久化余额历史文件
+      - checkin_data:/app/data
+      # 日志文件
+      - ./logs:/var/log
+
+volumes:
+  checkin_data:
