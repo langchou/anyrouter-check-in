@@ -4,6 +4,9 @@
 __pycache__
 .pytest_cache
 .ruff_cache
+.mypy_cache
 balance_hash.txt
 accounts.json
 logs/
+
+.DS_Store
